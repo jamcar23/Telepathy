@@ -51,10 +51,10 @@ namespace Telepathy.LoadTest
                         Message msg;
                         while (client.GetNextMessage(out msg))
                         {
-                            if (msg.eventType == EventType.Data)
+                            if (msg.EventType == EventType.Data)
                             {
                                 messagesReceived++;
-                                dataReceived += msg.data.Length;
+                                dataReceived += msg.Data.Length;
                             }
                         }
                     }

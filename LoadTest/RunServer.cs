@@ -25,12 +25,12 @@ namespace Telepathy.LoadTest
                 Message msg;
                 while (server.GetNextMessage(out msg))
                 {
-                    if (msg.eventType == EventType.Data)
+                    if (msg.EventType == EventType.Data)
                     {
-                        server.Send(msg.connectionId, msg.data);
+                        server.Send(msg.ConnectionId, msg.Data);
 
                         messagesReceived++;
-                        dataReceived += msg.data.Length;
+                        dataReceived += msg.Data.Length;
                     }
                 }
 

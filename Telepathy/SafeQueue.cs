@@ -5,7 +5,7 @@ namespace Telepathy
 {
     public class SafeQueue<T>
     {
-        Queue<T> queue = new Queue<T>();
+        Queue<T> _queue = new Queue<T>();
 
         // for statistics. don't call Count and assume that it's the same after the
         // call.
@@ -13,18 +13,18 @@ namespace Telepathy
         {
             get
             {
-                lock(queue)
+                lock(_queue)
                 {
-                    return queue.Count;
+                    return _queue.Count;
                 }
             }
         }
 
         public void Enqueue(T item)
         {
-            lock(queue)
+            lock(_queue)
             {
-                queue.Enqueue(item);
+                _queue.Enqueue(item);
             }
         }
 
@@ -32,12 +32,12 @@ namespace Telepathy
         // so we need a TryDequeue
         public bool TryDequeue(out T result)
         {
-            lock(queue)
+            lock(_queue)
             {
                 result = default(T);
-                if (queue.Count > 0)
+                if (_queue.Count > 0)
                 {
-                    result = queue.Dequeue();
+                    result = _queue.Dequeue();
                     return true;
                 }
                 return false;
@@ -46,9 +46,9 @@ namespace Telepathy
 
         public void Clear()
         {
-            lock(queue)
+            lock(_queue)
             {
-                queue.Clear();
+                _queue.Clear();
             }
         }
     }

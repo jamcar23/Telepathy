@@ -6,31 +6,31 @@ namespace Telepathy
 {
     public struct Message : IDisposable
     {
-        public int connectionId;
-        public EventType eventType;
-        public byte[] buffer;
-        public ArraySegment<byte> segment;
+        public int ConnectionId;
+        public EventType EventType;
+        public byte[] Buffer;
+        public ArraySegment<byte> Segment;
         [Obsolete("Use segment instead, and Dispose messages.")]
-        public byte[] data {
+        public byte[] Data {
             get {
-                var array = new byte[segment.Count - segment.Offset];
-                Array.Copy(segment.Array, segment.Offset, array, 0, segment.Count);
+                var array = new byte[Segment.Count - Segment.Offset];
+                Array.Copy(Segment.Array, Segment.Offset, array, 0, Segment.Count);
                 return array;
             }
         }
 
         public Message(int connectionId, EventType eventType, byte[] buffer, int size=0)
         {
-            this.connectionId = connectionId;
-            this.eventType = eventType;
-            this.buffer = buffer;
-            this.segment = new ArraySegment<byte>(this.buffer, 0, size);
+            this.ConnectionId = connectionId;
+            this.EventType = eventType;
+            this.Buffer = buffer;
+            this.Segment = new ArraySegment<byte>(this.Buffer, 0, size);
         }
 
         public void Dispose() 
         {
-            if(buffer != null)
-                ByteArrayPool.Return(buffer);
+            if(Buffer != null)
+                ByteArrayPool.Return(Buffer);
         }
     }
 }

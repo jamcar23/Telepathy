@@ -10,24 +10,24 @@ namespace Telepathy
     public class Server : Common
     {
         // listener
-        TcpListener listener;
-        Thread listenerThread;
+        TcpListener _listener;
+        Thread _listenerThread;
 
         // clients with <connectionId, TcpClient>
-        SafeDictionary<int, TcpClient> clients = new SafeDictionary<int, TcpClient>();
+        SafeDictionary<int, TcpClient> _clients = new SafeDictionary<int, TcpClient>();
 
         // connectionId counter
         // (right now we only use it from one listener thread, but we might have
         //  multiple threads later in case of WebSockets etc.)
         // -> static so that another server instance doesn't start at 0 again.
-        static int counter = 0;
+        static int _counter = 0;
 
         // public next id function in case someone needs to reserve an id
         // (e.g. if hostMode should always have 0 connection and external
         //  connections should start at 1, etc.)
         public static int NextConnectionId()
         {
-            int id = Interlocked.Increment(ref counter);
+            int id = Interlocked.Increment(ref _counter);
 
             // it's very unlikely that we reach the uint limit of 2 billion.
             // even with 1 new connection per second, this would take 68 years.
@@ -46,11 +46,11 @@ namespace Telepathy
         // check if the server is running
         public bool Active
         {
-            get { return listenerThread != null && listenerThread.IsAlive; }
+            get { return _listenerThread != null && _listenerThread.IsAlive; }
         }
 
         // the listener thread's listen function
-        void Listen(int port, int maxConnections)
+        private void Listen(int port, int maxConnections)
         {
             // absolutely must wrap with try/catch, otherwise thread
             // exceptions are silent
@@ -58,9 +58,9 @@ namespace Telepathy
             {
                 // start listener
                 // (NoDelay disables nagle algorithm. lowers CPU% and latency)
-                listener = new TcpListener(new IPEndPoint(IPAddress.Any, port));
-                listener.Server.NoDelay = true;
-                listener.Start();
+                _listener = new TcpListener(new IPEndPoint(IPAddress.Any, port));
+                _listener.Server.NoDelay = true;
+                _listener.Start();
                 Logger.Log("Server: listening port=" + port + " max=" + maxConnections);
 
                 // keep accepting new clients
@@ -70,10 +70,10 @@ namespace Telepathy
                     // note: 'using' sucks here because it will try to
                     // dispose after thread was started but we still need it
                     // in the thread
-                    TcpClient client = listener.AcceptTcpClient();
+                    TcpClient client = _listener.AcceptTcpClient();
 
                     // are more connections allowed?
-                    if (clients.Count < maxConnections)
+                    if (_clients.Count < maxConnections)
                     {
                         // generate the next connection id (thread safely)
                         int connectionId = NextConnectionId();
@@ -83,13 +83,13 @@ namespace Telepathy
                         Thread thread = new Thread(() =>
                         {
                             // add to dict immediately
-                            clients.Add(connectionId, client);
+                            _clients.Add(connectionId, client);
 
                             // run the receive loop
-                            ReceiveLoop(connectionId, client, messageQueue);
+                            ReceiveLoop(connectionId, client, MessageQueue);
 
                             // remove client from clients dict afterwards
-                            clients.Remove(connectionId);
+                            _clients.Remove(connectionId);
                         });
                         thread.IsBackground = true;
                         thread.Start();
@@ -134,13 +134,13 @@ namespace Telepathy
             // doesn't receive data from last time and gets out of sync.
             // -> calling this in Stop isn't smart because the caller may
             //    still want to process all the latest messages afterwards
-            messageQueue.Clear();
+            MessageQueue.Clear();
 
             // start the listener thread
             Logger.Log("Server: Start port=" + port + " max=" + maxConnections);
-            listenerThread = new Thread(() => { Listen(port, maxConnections); });
-            listenerThread.IsBackground = true;
-            listenerThread.Start();
+            _listenerThread = new Thread(() => { Listen(port, maxConnections); });
+            _listenerThread.IsBackground = true;
+            _listenerThread.Start();
         }
 
         public void Stop()
@@ -152,10 +152,10 @@ namespace Telepathy
 
             // stop listening to connections so that no one can connect while we
             // close the client connections
-            listener.Stop();
+            _listener.Stop();
 
             // close all client connections
-            List<TcpClient> connections = clients.GetValues();
+            List<TcpClient> connections = _clients.GetValues();
             foreach (TcpClient client in connections)
             {
                 // close the stream if not closed yet. it may have been closed
@@ -165,7 +165,7 @@ namespace Telepathy
             }
 
             // clear clients list
-            clients.Clear();
+            _clients.Clear();
         }
 
         // send message to client using socket connection.
@@ -173,7 +173,7 @@ namespace Telepathy
         {
             // find the connection
             TcpClient client;
-            if (clients.TryGetValue(connectionId, out client))
+            if (_clients.TryGetValue(connectionId, out client))
             {
                 // GetStream() might throw exception if client is disconnected
                 try
@@ -197,7 +197,7 @@ namespace Telepathy
         {
             // find the connection
             TcpClient client;
-            if (clients.TryGetValue(connectionId, out client))
+            if (_clients.TryGetValue(connectionId, out client))
             {
                 address = ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString();
                 return true;

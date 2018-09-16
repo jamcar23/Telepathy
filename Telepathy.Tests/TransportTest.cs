@@ -62,7 +62,7 @@ namespace Telepathy.Tests
 
             // wait for successful connection
             Message connectMsg = NextMessage(client);
-            Assert.That(connectMsg.eventType, Is.EqualTo(EventType.Connected));
+            Assert.That(connectMsg.EventType, Is.EqualTo(EventType.Connected));
             // disconnect and lets try again
             client.Disconnect();
 
@@ -71,7 +71,7 @@ namespace Telepathy.Tests
             client.Connect("127.0.0.1", port);
             // wait for successful connection
             connectMsg = NextMessage(client);
-            Assert.That(connectMsg.eventType, Is.EqualTo(EventType.Connected));
+            Assert.That(connectMsg.EventType, Is.EqualTo(EventType.Connected));
 
             client.Disconnect();
         }
@@ -86,20 +86,20 @@ namespace Telepathy.Tests
 
             // we  should first receive a connected message
             Message connectMsg = NextMessage(server);
-            Assert.That(connectMsg.eventType, Is.EqualTo(EventType.Connected));
+            Assert.That(connectMsg.EventType, Is.EqualTo(EventType.Connected));
 
 
             // then we should receive the data
             client.Send(utf8.GetBytes("Hello world"));
             Message dataMsg = NextMessage(server);
-            Assert.That(dataMsg.eventType, Is.EqualTo(EventType.Data));
-            string str = utf8.GetString(dataMsg.data);
+            Assert.That(dataMsg.EventType, Is.EqualTo(EventType.Data));
+            string str = utf8.GetString(dataMsg.Data);
             Assert.That(str, Is.EqualTo("Hello world"));
 
             // finally when the client disconnect,  we should get a disconnected message
             client.Disconnect();
             Message disconnectMsg = NextMessage(server);
-            Assert.That(disconnectMsg.eventType, Is.EqualTo(EventType.Disconnected));
+            Assert.That(disconnectMsg.EventType, Is.EqualTo(EventType.Disconnected));
         }
 
         [Test]
@@ -112,23 +112,23 @@ namespace Telepathy.Tests
 
             // we  should first receive a connected message
             Message serverConnectMsg = NextMessage(server);
-            int id = serverConnectMsg.connectionId;
+            int id = serverConnectMsg.ConnectionId;
 
             // we  should first receive a connected message
             Message clientConnectMsg = NextMessage(client);
-            Assert.That(serverConnectMsg.eventType, Is.EqualTo(EventType.Connected));
+            Assert.That(serverConnectMsg.EventType, Is.EqualTo(EventType.Connected));
 
             // Send some data to the client
             server.Send(id, utf8.GetBytes("Hello world"));
             Message dataMsg = NextMessage(client);
-            Assert.That(dataMsg.eventType, Is.EqualTo(EventType.Data));
-            string str = utf8.GetString(dataMsg.data);
+            Assert.That(dataMsg.EventType, Is.EqualTo(EventType.Data));
+            string str = utf8.GetString(dataMsg.Data);
             Assert.That(str, Is.EqualTo("Hello world"));
 
             // finally if the server stops,  the clients should get a disconnect error
             server.Stop();
             Message disconnectMsg = NextMessage(client);
-            Assert.That(disconnectMsg.eventType, Is.EqualTo(EventType.Disconnected));
+            Assert.That(disconnectMsg.EventType, Is.EqualTo(EventType.Disconnected));
 
             client.Disconnect();
         }
@@ -142,11 +142,11 @@ namespace Telepathy.Tests
 
             // get server's connect message
             Message serverConnectMsg = NextMessage(server);
-            Assert.That(serverConnectMsg.eventType, Is.EqualTo(EventType.Connected));
+            Assert.That(serverConnectMsg.EventType, Is.EqualTo(EventType.Connected));
 
             // get server's connection info for that client
             string address;
-            if (server.GetConnectionInfo(serverConnectMsg.connectionId, out address))
+            if (server.GetConnectionInfo(serverConnectMsg.ConnectionId, out address))
             {
                 Assert.That(address == "127.0.0.1");
             }

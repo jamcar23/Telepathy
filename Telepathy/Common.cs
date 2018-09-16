@@ -7,19 +7,31 @@ namespace Telepathy
 {
     public abstract class Common
     {
-        // common code /////////////////////////////////////////////////////////
-        // incoming message queue of <connectionId, message>
-        // (not a HashSet because one connection can have multiple new messages)
-        protected SafeQueue<Message> messageQueue = new SafeQueue<Message>();
+        [ThreadStatic] private static readonly byte[] _header;
+        
+        /// <summary>
+        /// warning if message queue gets too big
+        /// if the average message is about 20 bytes then:
+        /// -   1k messages are   20KB
+        /// -  10k messages are  200KB
+        /// - 100k messages are 1.95MB
+        /// 2MB are not that much, but it is a bad sign if the caller process
+        /// can't call GetNextMessage faster than the incoming messages.
+        /// </summary>
+        public static int MessageQueueSizeWarning;
+        
+        /// <summary>
+        /// common code /////////////////////////////////////////////////////////
+        /// incoming message queue of <connectionId, message>
+        /// (not a HashSet because one connection can have multiple new messages)
+        /// </summary>
+        protected readonly SafeQueue<Message> MessageQueue = new SafeQueue<Message>();
 
-        // warning if message queue gets too big
-        // if the average message is about 20 bytes then:
-        // -   1k messages are   20KB
-        // -  10k messages are  200KB
-        // - 100k messages are 1.95MB
-        // 2MB are not that much, but it is a bad sign if the caller process
-        // can't call GetNextMessage faster than the incoming messages.
-        public static int messageQueueSizeWarning = 100000;
+        static Common()
+        {
+            MessageQueueSizeWarning = 100000;
+            _header = new byte[2];
+        }
 
         // removes and returns the oldest message from the message queue.
         // (might want to call this until it doesn't return anything anymore)
@@ -29,7 +41,7 @@ namespace Telepathy
         //    Disconnected message after a disconnect
         public bool GetNextMessage(out Message message)
         {
-            return messageQueue.TryDequeue(out message);
+            return MessageQueue.TryDequeue(out message);
         }
 
         // static helper functions /////////////////////////////////////////////
@@ -91,16 +103,15 @@ namespace Telepathy
             }
         }
 
-        [ThreadStatic] static byte[] header = new byte[2];
         // read message (via stream) with the <size,content> message structure
         protected static bool ReadMessageBlocking(NetworkStream stream, byte[] content, out int size)
         {
             size = 0;
             // read exactly 2 bytes for header (blocking)
-            if (!stream.ReadExactly(header, 2))
+            if (!stream.ReadExactly(_header, 2))
                 return false;
 
-            size = BytesToUShort(header);
+            size = BytesToUShort(_header);
 
             // read exactly 'size' bytes for content (blocking)
             if (!stream.ReadExactly(content, size))
@@ -146,10 +157,9 @@ namespace Telepathy
                 //    + no crazy extraction logic
                 while (true)
                 {
-                    int size;
                     byte[] content = ByteArrayPool.Take();
                     // read the next message (blocking) or stop if stream closed
-                    if (!ReadMessageBlocking(stream, content, out size))
+                    if (!ReadMessageBlocking(stream, content, out int size))
                         break;
 
                     // queue it
@@ -163,7 +173,7 @@ namespace Telepathy
                     //    logging, which will make the queue pile up even more.
                     // -> instead we show it every 10s, so that the system can
                     //    use most it's processing power to hopefully process it.
-                    if (messageQueue.Count > messageQueueSizeWarning)
+                    if (messageQueue.Count > MessageQueueSizeWarning)
                     {
                         TimeSpan elapsed = DateTime.Now - messageQueueLastWarning;
                         if (elapsed.TotalSeconds > 10)

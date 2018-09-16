@@ -6,7 +6,7 @@ namespace Telepathy
 {
     public class Client : Common
     {
-        TcpClient client;
+        TcpClient _client;
 
         public bool Connected
         {
@@ -15,16 +15,16 @@ namespace Telepathy
                 // TcpClient.Connected doesn't check if socket != null, which
                 // results in NullReferenceExceptions if connection was closed.
                 // -> let's check it manually instead
-                return client != null &&
-                       client.Client != null &&
-                       client.Client.Connected;
+                return _client != null &&
+                       _client.Client != null &&
+                       _client.Client.Connected;
             }
         }
 
         public bool Connecting
         {
             // client was created by Connect() call but not fully connected yet?
-            get { return client != null && !Connected; }
+            get { return _client != null && !Connected; }
         }
 
         // the thread function
@@ -72,13 +72,13 @@ namespace Telepathy
 
             // TcpClient can only be used once. need to create a new one each
             // time.
-            client = new TcpClient();
+            _client = new TcpClient();
 
             // clear old messages in queue, just to be sure that the caller
             // doesn't receive data from last time and gets out of sync.
             // -> calling this in Disconnect isn't smart because the caller may
             //    still want to process all the latest messages afterwards
-            messageQueue.Clear();
+            MessageQueue.Clear();
 
             // client.Connect(ip, port) is blocking. let's call it in the thread
             // and return immediately.
@@ -86,38 +86,37 @@ namespace Telepathy
             //    too long, which is especially good in games
             // -> this way we don't async client.BeginConnect, which seems to
             //    fail sometimes if we connect too many clients too fast
-            Thread thread = new Thread(() => { ThreadFunction(client, ip, port, messageQueue); });
+            Thread thread = new Thread(() => { ThreadFunction(_client, ip, port, MessageQueue); });
             thread.IsBackground = true;
             thread.Start();
         }
 
         public void Disconnect()
         {
-            // only if started
-            if (Connecting || Connected)
-            {
-                // close client, ThreadFunc will end and clean up
-                client.Close();
+            // only if not started return
+            if (!Connecting && !Connected) return;
+            
+            // close client, ThreadFunc will end and clean up
+            _client.Close();
 
-                // clear client reference so that we can call Connect again
-                // immediately after calling Disconnect.
-                // -> this client's thread will end in the background in a few
-                //    milliseconds, we don't need to worry about it anymore
-                // -> setting it null here won't set it null in ThreadFunction,
-                //    because it's static and we pass a reference. so there
-                //    won't be any NullReferenceExceptions. the thread will just
-                //    end gracefully.
-                client = null;
+            // clear client reference so that we can call Connect again
+            // immediately after calling Disconnect.
+            // -> this client's thread will end in the background in a few
+            //    milliseconds, we don't need to worry about it anymore
+            // -> setting it null here won't set it null in ThreadFunction,
+            //    because it's static and we pass a reference. so there
+            //    won't be any NullReferenceExceptions. the thread will just
+            //    end gracefully.
+            _client = null;
 
-                Logger.Log("Client: disconnected");
-            }
+            Logger.Log("Client: disconnected");
         }
 
         public bool Send(byte[] data)
         {
             if (Connected)
             {
-                return SendMessage(client.GetStream(), data);
+                return SendMessage(_client.GetStream(), data);
             }
             Logger.LogWarning("Client.Send: not connected!");
             return false;

@@ -9,33 +9,34 @@ namespace Telepathy
     /// </summary>
     public static class ByteArrayPool
     {
-        [ThreadStatic] static readonly Queue<byte[]> byteArrayPool = new Queue<byte[]>();
+        [ThreadStatic] private static readonly Queue<byte[]> ArrayPool;
+
+        static ByteArrayPool()
+        {
+            ArrayPool = new Queue<byte[]>();
+        }
 
         /// <summary>
         /// Take an array from the pool.
         /// </summary>
         /// <returns>The array.</returns>
-        static public byte[] Take()
+        public static byte[] Take()
         {
-            if (byteArrayPool.Count == 0)
-            {
-                return new byte[ushort.MaxValue];
-            }
-            return byteArrayPool.Dequeue();
+            return ArrayPool.Count == 0 ? new byte[ushort.MaxValue] : ArrayPool.Dequeue();
         }
 
         /// <summary>
         /// Return an array to the pool.
         /// </summary>
         /// <param name="bytes">The array.</param>
-        static public void Return(byte[] bytes)
+        public static void Return(byte[] bytes)
         {
             if (bytes.Length != ushort.MaxValue)
             {
                 throw new System.ArgumentException("incorrect length", nameof(bytes));
 
             }
-            byteArrayPool.Enqueue(bytes);
+            ArrayPool.Enqueue(bytes);
         }
 
     }

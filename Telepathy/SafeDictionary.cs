@@ -6,7 +6,7 @@ namespace Telepathy
 {
     public class SafeDictionary<TKey,TValue>
     {
-        Dictionary<TKey,TValue> dict = new Dictionary<TKey,TValue>();
+        Dictionary<TKey,TValue> _dict = new Dictionary<TKey,TValue>();
 
         // for statistics. don't call Count and assume that it's the same after the
         // call.
@@ -14,26 +14,26 @@ namespace Telepathy
         {
             get
             {
-                lock(dict)
+                lock(_dict)
                 {
-                    return dict.Count;
+                    return _dict.Count;
                 }
             }
         }
 
         public void Add(TKey key, TValue value)
         {
-            lock(dict)
+            lock(_dict)
             {
-                dict[key] = value;
+                _dict[key] = value;
             }
         }
 
         public void Remove(TKey key)
         {
-            lock(dict)
+            lock(_dict)
             {
-                dict.Remove(key);
+                _dict.Remove(key);
             }
         }
 
@@ -41,25 +41,25 @@ namespace Telepathy
         // so we need a TryGetValue
         public bool TryGetValue(TKey key, out TValue result)
         {
-            lock(dict)
+            lock(_dict)
             {
-                return dict.TryGetValue(key, out result);
+                return _dict.TryGetValue(key, out result);
             }
         }
 
         public List<TValue> GetValues()
         {
-            lock(dict)
+            lock(_dict)
             {
-                return dict.Values.ToList();
+                return _dict.Values.ToList();
             }
         }
 
         public void Clear()
         {
-            lock(dict)
+            lock(_dict)
             {
-                dict.Clear();
+                _dict.Clear();
             }
         }
     }
