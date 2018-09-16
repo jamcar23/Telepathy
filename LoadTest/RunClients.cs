@@ -55,6 +55,7 @@ namespace Telepathy.LoadTest
                             {
                                 messagesReceived++;
                                 dataReceived += msg.Data.Length;
+                                msg.Dispose();
                             }
                         }
                     }

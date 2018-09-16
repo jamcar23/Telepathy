@@ -27,10 +27,11 @@ namespace Telepathy.LoadTest
                 {
                     if (msg.EventType == EventType.Data)
                     {
-                        server.Send(msg.ConnectionId, msg.Data);
+                        server.Send(msg.ConnectionId, msg.Segment.Array);
 
                         messagesReceived++;
-                        dataReceived += msg.Data.Length;
+                        dataReceived += msg.Segment.Count;
+                        msg.Dispose();
                     }
                 }
 
