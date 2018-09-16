@@ -10,17 +10,17 @@ namespace Telepathy
     public class Server : Common
     {
         // listener
-        TcpListener _listener;
-        Thread _listenerThread;
+        private TcpListener _listener;
+        private Thread _listenerThread;
 
         // clients with <connectionId, TcpClient>
-        SafeDictionary<int, TcpClient> _clients = new SafeDictionary<int, TcpClient>();
+        private readonly SafeDictionary<int, TcpClient> _clients = new SafeDictionary<int, TcpClient>();
 
         // connectionId counter
         // (right now we only use it from one listener thread, but we might have
         //  multiple threads later in case of WebSockets etc.)
         // -> static so that another server instance doesn't start at 0 again.
-        static int _counter = 0;
+        private static int _counter = 0;
 
         // public next id function in case someone needs to reserve an id
         // (e.g. if hostMode should always have 0 connection and external

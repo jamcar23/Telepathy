@@ -6,7 +6,7 @@ namespace Telepathy
 {
     public class SafeDictionary<TKey,TValue>
     {
-        Dictionary<TKey,TValue> _dict = new Dictionary<TKey,TValue>();
+        private Dictionary<TKey,TValue> _dict = new Dictionary<TKey,TValue>();
 
         // for statistics. don't call Count and assume that it's the same after the
         // call.

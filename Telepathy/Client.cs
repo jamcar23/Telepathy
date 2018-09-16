@@ -6,7 +6,7 @@ namespace Telepathy
 {
     public class Client : Common
     {
-        TcpClient _client;
+        private TcpClient _client;
 
         public bool Connected
         {
@@ -29,7 +29,7 @@ namespace Telepathy
 
         // the thread function
         // (static to reduce state for maximum reliability)
-        static void ThreadFunction(TcpClient client, string ip, int port, SafeQueue<Message> messageQueue)
+        private static void ThreadFunction(TcpClient client, string ip, int port, SafeQueue<Message> messageQueue)
         {
             // absolutely must wrap with try/catch, otherwise thread
             // exceptions are silent
